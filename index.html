@@ -3,34 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Manager News</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <title>In-Shorts Like App</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.3/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <style>
+        .swiper-container {
+            height: 100vh;
+        }
+        .swiper-slide {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <div class="news-card" id="newsCard1">
-            <h2>Product Launch Tips</h2>
-            <p>Launching a new product? Make sure to validate your market and gather feedback early to avoid costly mistakes.</p>
-            <a href="#" class="read-more">Read More <i class="fas fa-arrow-right"></i></a>
-        </div>
-        <div class="news-card" id="newsCard2">
-            <h2>Agile Methodology</h2>
-            <p>Agile is not just a buzzword. Embracing agile principles can significantly improve your product development process.</p>
-            <a href="#" class="read-more">Read More <i class="fas fa-arrow-right"></i></a>
-        </div>
-        <div class="news-card" id="newsCard3">
-            <h2>Roadmap Best Practices</h2>
-            <p>Creating a product roadmap? Focus on high-level goals and be flexible to adapt to changing priorities.</p>
-            <a href="#" class="read-more">Read More <i class="fas fa-arrow-right"></i></a>
-        </div>
-        <div class="news-card" id="newsCard4">
-            <h2>User Feedback Strategies</h2>
-            <p>Gathering user feedback is crucial. Learn the best practices for collecting and acting on customer insights.</p>
-            <a href="#" class="read-more">Read More <i class="fas fa-arrow-right"></i></a>
+<body class="bg-gray-100">
+    <div class="swiper-container">
+        <div class="swiper-wrapper" id="news-wrapper">
+            <!-- News cards will be dynamically injected here -->
         </div>
     </div>
-    <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
-    <script src="script.js"></script>
+
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <script>
+        // Function to fetch news from the backend API
+        async function fetchNews() {
+            try {
+                const response = await fetch('https://sleepy-reaches-20842-d5cd264ad541.herokuapp.com/api/news');
+                const data = await response.json();
+                populateNews(data.articles);
+            } catch (error) {
+                console.error('Error fetching news:', error);
+            }
+        }
+
+        // Function to populate the Swiper with news articles
+        function populateNews(articles) {
+            const newsWrapper = document.getElementById('news-wrapper');
+            newsWrapper.innerHTML = ''; // Clear existing content
+
+            articles.forEach(article => {
+                const newsCard = document.createElement('div');
+                newsCard.className = 'swiper-slide bg-white p-4 rounded-lg shadow-lg';
+                newsCard.innerHTML = `
+                    <img src="${article.urlToImage || 'default-image.jpg'}" alt="${article.title}" class="w-full h-64 object-cover rounded-t-lg">
+                    <h2 class="text-xl font-bold mt-4">${article.title}</h2>
+                    <p class="mt-2 text-gray-600">${article.description || ''}</p>
+                `;
+                newsWrapper.appendChild(newsCard);
+            });
+
+            // Initialize Swiper after dynamically populating the content
+            new Swiper('.swiper-container', {
+                direction: 'vertical',
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+            });
+        }
+
+        // Fetch news when the page loads
+        window.onload = fetchNews;
+    </script>
 </body>
 </html>
