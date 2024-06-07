@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In-Shorts Like App</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.3/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <style>
+        .swiper-container {
+            height: 100vh;
+        }
+        .swiper-slide {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="swiper-container">
+        <div class="swiper-wrapper" id="news-wrapper">
+            <!-- News cards will be dynamically injected here -->
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <script>
+        // Function to fetch news from the backend API
+        async function fetchNews() {
+            try {
+                const response = await fetch('http://localhost:3000/api/news');
+                const data = await response.json();
+                populateNews(data.articles);
+            } catch (error) {
+                console.error('Error fetching news:', error);
+            }
+        }
+
+        // Function to populate the Swiper with news articles
+        function populateNews(articles) {
+            const newsWrapper = document.getElementById('news-wrapper');
+            newsWrapper.innerHTML = ''; // Clear existing content
+
+            articles.forEach(article => {
+                const newsCard = document.createElement('div');
+                newsCard.className = 'swiper-slide bg-white p-4 rounded-lg shadow-lg';
+                newsCard.innerHTML = `
+                    <img src="${article.urlToImage || 'default-image.jpg'}" alt="${article.title}" class="w-full h-64 object-cover rounded-t-lg">
+                    <h2 class="text-xl font-bold mt-4">${article.title}</h2>
+                    <p class="mt-2 text-gray-600">${article.description || ''}</p>
+                `;
+                newsWrapper.appendChild(newsCard);
+            });
+
+            // Initialize Swiper after dynamically populating the content
+            new Swiper('.swiper-container', {
+                direction: 'vertical',
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+            });
+        }
+
+        // Fetch news when the page loads
+        window.onload = fetchNews;
+    </script>
+</body>
+</html>
