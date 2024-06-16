@@ -1,34 +1,31 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const newsCards = document.querySelectorAll('.news-card');
-    let currentCardIndex = 0;
+    axios.get('/videos')
+        .then(response => {
+            const videos = response.data;
+            videos.forEach(video => {
+                axios.get(`/summary/${video.video_id}`)
+                    .then(summaryResponse => {
+                        const { summary, thumbnail_url } = summaryResponse.data;
+                        const videoCard = document.createElement('div');
+                        videoCard.classList.add('video-card');
+                        videoCard.innerHTML = `
+                            <img src="${thumbnail_url}" alt="${video.video_title}">
+                            <h2>${video.video_title}</h2>
+                            <p>${summary}</p>
+                        `;
+                        document.getElementById('video-container').appendChild(videoCard);
+                    })
+                    .catch(error => console.error('Error fetching summary:', error));
+            });
+        })
+        .catch(error => console.error('Error fetching videos:', error));
 
-    function showCard(index) {
-        newsCards.forEach((card, i) => {
-            if (i === index) {
-                card.style.transform = 'translateX(0)';
-                card.style.opacity = '1';
-            } else if (i < index) {
-                card.style.transform = 'translateX(-100%)';
-                card.style.opacity = '0';
-            } else {
-                card.style.transform = 'translateX(100%)';
-                card.style.opacity = '0';
-            }
-        });
-    }
-    const hammertime = new Hammer(document.body);
-    hammertime.on('swipeleft', () => {
-        if (currentCardIndex < newsCards.length - 1) {
-            currentCardIndex++;
-            showCard(currentCardIndex);
-        }
+    // Swipe functionality using Hammer.js
+    const videoContainer = document.getElementById('video-container');
+    const hammer = new Hammer(videoContainer);
+    hammer.get('swipe').set({ direction: Hammer.DIRECTION_VERTICAL });
+    hammer.on('swipeup swipedown', function(ev) {
+        // Handle swipe gestures as needed
+        console.log(ev);
     });
-
-    hammertime.on('swiperight', () => {
-        if (currentCardIndex > 0) {
-            currentCardIndex--;
-            showCard(currentCardIndex);
-        }
-    });
-    showCard(currentCardIndex);
 });

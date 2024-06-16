@@ -3,52 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>In-Shorts Like App</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.3/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <title>Inshorts-like Summary</title>
     <style>
-        /* Ensure the swiper takes full height */
-        .swiper-container {
-            height: 100vh;
-        }
-        .swiper-slide {
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .card-container {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            overflow: hidden;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: #fff;
+            box-sizing: border-box;
+            overflow: hidden;
+            border-radius: 8px;
+            transition: transform 0.3s ease;
+        }
+        .card img {
+            width: 100%;
+            height: auto;
+            margin-bottom: 10px;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        .card .content {
+            overflow-y: auto;
+            flex: 1;
+        }
+        .card h3 {
+            font-size: 18px;
+            margin-top: 0;
+        }
+        .card p {
+            font-size: 14px;
+            line-height: 1.6;
         }
     </style>
 </head>
-<body class="bg-gray-100">
-
-<div class="swiper-container">
-    <div class="swiper-wrapper">
-        <!-- Card 1 -->
-        <div class="swiper-slide bg-white p-4 rounded-lg shadow-lg">
-            <img src="placeholder1.jpg" alt="Image 1" class="w-full h-64 object-cover rounded-t-lg">
-            <h2 class="text-xl font-bold mt-4">Title for Image 1</h2>
-            <p class="mt-2 text-gray-600">This is some description for image 1. This text box contains a brief description of the image above.</p>
-        </div>
-        <!-- Card 2 -->
-        <div class="swiper-slide bg-white p-4 rounded-lg shadow-lg">
-            <img src="placeholder2.jpg" alt="Image 2" class="w-full h-64 object-cover rounded-t-lg">
-            <h2 class="text-xl font-bold mt-4">Title for Image 2</h2>
-            <p class="mt-2 text-gray-600">This is some description for image 2. This text box contains a brief description of the image above.</p>
-        </div>
-        <!-- Additional cards can be added here -->
+<body>
+    <div class="card-container" id="cardContainer">
+        <!-- Swipe cards will be dynamically inserted here -->
     </div>
-</div>
 
-<script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
-<script>
-    var swiper = new Swiper('.swiper-container', {
-        direction: 'vertical',
-        pagination: {
-            el: '.swiper-pagination',
-            clickable: true,
-        },
-    });
-</script>
+    <script>
+        let currentIndex = 0;
+        let startY = 0;
+        let videosData = []; // To store fetched video data
 
+        // Function to fetch data from Flask backend
+        async function fetchVideos() {
+            try {
+                const response = await fetch('http://localhost:5003/videos'); // Adjust URL as per your Flask app URL
+                videosData = await response.json();
+                createSwipeCards();
+            } catch (error) {
+                console.error('Error fetching videos:', error);
+            }
+        }
+
+        // Function to create swipe cards
+        function createSwipeCards() {
+            const cardContainer = document.getElementById('cardContainer');
+
+            videosData.forEach((video, index) => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+
+                // Image
+                const img = document.createElement('img');
+                img.src = video.video_thumbnail;
+                card.appendChild(img);
+
+                // Content
+                const content = document.createElement('div');
+                content.classList.add('content');
+
+                // Title
+                const title = document.createElement('h3');
+                title.textContent = video.video_title;
+                content.appendChild(title);
+
+                // Summary (not implemented in this example, but you can fetch and display it similarly)
+
+                card.appendChild(content);
+                cardContainer.appendChild(card);
+
+                // Adjust card position based on index
+                card.style.transform = `translateY(${index * 100}%)`;
+            });
+
+            // Add touch event listeners for swipe functionality
+            cardContainer.addEventListener('touchstart', touchStart);
+            cardContainer.addEventListener('touchmove', touchMove);
+            cardContainer.addEventListener('touchend', touchEnd);
+        }
+
+        // Handle touch start event
+        function touchStart(event) {
+            const touch = event.touches[0];
+            startY = touch.clientY;
+        }
+
+        // Handle touch move event
+        function touchMove(event) {
+            const touch = event.touches[0];
+            const deltaY = touch.clientY - startY;
+            moveCards(deltaY);
+        }
+
+        // Handle touch end event
+        function touchEnd(event) {
+            // Determine direction of swipe
+            const cardContainer = document.getElementById('cardContainer');
+            const cardHeight = cardContainer.clientHeight;
+            if (Math.abs(startY - event.changedTouches[0].clientY) > 50) {
+                if (startY > event.changedTouches[0].clientY && currentIndex < videosData.length - 1) {
+                    currentIndex++;
+                } else if (startY < event.changedTouches[0].clientY && currentIndex > 0) {
+                    currentIndex--;
+                }
+                cardContainer.style.transform = `translateY(-${currentIndex * cardHeight}px)`;
+            }
+        }
+
+        // Function to move cards based on deltaY
+        function moveCards(deltaY) {
+            const cardContainer = document.getElementById('cardContainer');
+            cardContainer.style.transform = `translateY(calc(-${currentIndex * 100}% + ${deltaY}px))`;
+        }
+
+        // Call the function to fetch videos when the page loads
+        window.onload = fetchVideos;
+    </script>
 </body>
 </html>

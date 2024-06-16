@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Summaries</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .card {
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+            border-radius: 8px;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .card:hover {
+            transform: scale(1.03);
+        }
+
+        .thumbnail-container {
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .thumbnail-container img {
+            width: 100%;
+            height: auto;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.4em;
+        }
+
+        p {
+            font-size: 1em;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="videoCard" class="card">
+            <div class="thumbnail-container">
+                <img id="thumbnail" src="" alt="Video Thumbnail">
+            </div>
+            <div class="content">
+                <h2 id="title"></h2>
+                <p id="summary"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let currentIndex = 0;
+            let maxResults = 5; // Adjust this according to your backend pagination logic
+
+            function fetchNextSummary() {
+                axios.get(`http://localhost:5007/summary/`)
+                    .then(response => {
+                        const data = response.data;
+                        const videoId = Object.keys(data)[0]; // Assuming only one video summary is fetched at a time
+
+                        if (data[videoId]) {
+                            const { title, summary, thumbnail_url } = data[videoId];
+                            displayVideoSummary(title, summary, thumbnail_url);
+                        } else {
+                            console.log('No more video summaries available.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching video summary:', error);
+                    });
+            }
+
+            function displayVideoSummary(title, summary, thumbnailUrl) {
+                const titleElement = document.getElementById('title');
+                const summaryElement = document.getElementById('summary');
+                const thumbnailElement = document.getElementById('thumbnail');
+
+                titleElement.textContent = title;
+                summaryElement.textContent = summary;
+                thumbnailElement.src = thumbnailUrl;
+            }
+
+            fetchNextSummary();
+
+            // Swipe functionality
+            let touchstartY = 0;
+            let touchendY = 0;
+
+            const card = document.getElementById('videoCard');
+
+            card.addEventListener('touchstart', function(event) {
+                touchstartY = event.changedTouches[0].screenY;
+            }, false);
+
+            card.addEventListener('touchend', function(event) {
+                touchendY = event.changedTouches[0].screenY;
+                handleGesture();
+            }, false);
+
+            function handleGesture() {
+                if (touchendY < touchstartY) {
+                    // Swipe up detected
+                    currentIndex++;
+                    fetchNextSummary();
+                } else if (touchendY > touchstartY) {
+                    // Swipe down detected (if needed)
+                    // Example: go to previous item
+                    // if (currentIndex > 0) {
+                    //     currentIndex--;
+                    //     fetchNextSummary();
+                    // }
+                }
+            }
+
+            // Scroll event for continuous loading (if needed)
+            window.addEventListener('scroll', () => {
+                const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+                const scrolled = window.scrollY;
+                if (scrolled === scrollable && currentIndex < maxResults - 1) {
+                    currentIndex++;
+                    fetchNextSummary();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

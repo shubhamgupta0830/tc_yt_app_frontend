@@ -3,69 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>In-Shorts Like App</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.3/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <title>YouTube Video Summaries</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        .swiper-container {
-            height: 100vh;
+        .video-container {
+            margin-top: 20px;
         }
-        .swiper-slide {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+        .video-card {
+            margin-bottom: 20px;
         }
     </style>
 </head>
-<body class="bg-gray-100">
-    <div class="swiper-container">
-        <div class="swiper-wrapper" id="news-wrapper">
-            <!-- News cards will be dynamically injected here -->
+<body>
+    <div class="container">
+        <h1 class="mt-4 mb-4">YouTube Video Summaries</h1>
+        <div id="videoList" class="row">
+            <!-- Video cards will be dynamically added here -->
+        </div>
+        <div id="summaryModal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Video Summary</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="summaryContent">
+                            <!-- Summary content will be dynamically added here -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // Function to fetch news from the backend API
-        async function fetchNews() {
+        // Function to fetch videos from backend and render them
+        async function fetchVideos() {
             try {
-                const response = await fetch('http://localhost:3000/api/news');
-                const data = await response.json();
-                populateNews(data.articles);
+                const response = await axios.get('http://localhost:5004/videos');
+                const videos = response.data;
+
+                const videoList = document.getElementById('videoList');
+                videoList.innerHTML = '';
+
+                videos.forEach(video => {
+                    const videoCard = `
+                        <div class="col-md-4 video-card">
+                            <div class="card">
+                                <img src="${video.video_thumbnail}" class="card-img-top" alt="Video Thumbnail">
+                                <div class="card-body">
+                                    <h5 class="card-title">${video.video_title}</h5>
+                                    <button class="btn btn-primary" onclick="showSummary('${video.video_id}')">Show Summary</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    videoList.innerHTML += videoCard;
+                });
             } catch (error) {
-                console.error('Error fetching news:', error);
+                console.error('Error fetching videos:', error);
             }
         }
 
-        // Function to populate the Swiper with news articles
-        function populateNews(articles) {
-            const newsWrapper = document.getElementById('news-wrapper');
-            newsWrapper.innerHTML = ''; // Clear existing content
+        // Function to fetch and display summary for a video
+        async function showSummary(videoId) {
+            try {
+                const response = await axios.get(`http://localhost:5004/summary/${videoId}`);
+                const summaryData = response.data;
 
-            articles.forEach(article => {
-                const newsCard = document.createElement('div');
-                newsCard.className = 'swiper-slide bg-white p-4 rounded-lg shadow-lg';
-                newsCard.innerHTML = `
-                    <img src="${article.urlToImage || 'default-image.jpg'}" alt="${article.title}" class="w-full h-64 object-cover rounded-t-lg">
-                    <h2 class="text-xl font-bold mt-4">${article.title}</h2>
-                    <p class="mt-2 text-gray-600">${article.description || ''}</p>
+                const summaryContent = document.getElementById('summaryContent');
+                summaryContent.innerHTML = `
+                    <p>${summaryData.summary}</p>
+                    <p><a href="${summaryData.url}" target="_blank">Watch Video</a></p>
                 `;
-                newsWrapper.appendChild(newsCard);
-            });
 
-            // Initialize Swiper after dynamically populating the content
-            new Swiper('.swiper-container', {
-                direction: 'vertical',
-                pagination: {
-                    el: '.swiper-pagination',
-                    clickable: true,
-                },
-            });
+                $('#summaryModal').modal('show'); // Show Bootstrap modal
+            } catch (error) {
+                console.error('Error fetching video summary:', error);
+            }
         }
 
-        // Fetch news when the page loads
-        window.onload = fetchNews;
+        // Fetch videos when the page loads
+        window.onload = function() {
+            fetchVideos();
+        };
     </script>
 </body>
 </html>
